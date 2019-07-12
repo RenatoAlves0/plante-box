@@ -9,8 +9,8 @@
 #define luz 36
 #define luz_vcc 32
 
-#define solo 39
-#define solo_vcc 25
+#define umidade_solo 39
+#define umidade_solo_vcc 25
 
 #define chuva 34
 #define chuva_vcc 27
@@ -19,12 +19,11 @@
 #define aguar_vcc 18
 
 #define tempo_l 1500
-#define tempo 6000
+#define tempo 5000
 
 #define ssid "..."
 #define password "windows10mobile1"
-#define topico_dado_teste "plante_iot_dado_teste(renalves.oli)"
-#define topico_dado_teste_novo "plante_iot_dado_teste_novo(renalves.oli)"
+#define topico "plante_iot_dados(renalves.oli)"
 #define section_id "plante_iot_id(renalves.oli)"
 #define broker "iot.eclipse.org"
 #define broker_port 1883
@@ -33,11 +32,14 @@
 WiFiClient plante_iot;
 PubSubClient MQTT(plante_iot);
 DHT dht(clima, DHT11);
+float _temperatura, _umidade, _umidadeSolo, _luz, _chuva;
 
 //Prototypes
 void conectarWiFi();
 void conectarMQTT();
-void sub_mqtt(char *topic, byte *payload, unsigned int length);
+void pub_mqtt();
+void sub_mqtt();
+void get_data_mqtt(char *topic, byte *payload, unsigned int length);
 
 void setup()
 {
@@ -45,11 +47,11 @@ void setup()
     conectarWiFi();
 
     MQTT.setServer(broker, broker_port);
-    MQTT.setCallback(sub_mqtt);
+    MQTT.setCallback(get_data_mqtt);
     conectarMQTT();
 
     pinMode(clima_vcc, OUTPUT);
-    pinMode(solo_vcc, OUTPUT);
+    pinMode(umidade_solo_vcc, OUTPUT);
     pinMode(luz_vcc, OUTPUT);
     pinMode(chuva_vcc, OUTPUT);
     pinMode(aguar_vcc, OUTPUT);
@@ -62,7 +64,7 @@ void conectarWiFi()
 {
     if (WiFi.status() != WL_CONNECTED)
     {
-        Serial.print("Conectando-se ao Wi-Fi ");
+        Serial.println("!!! Conectando-se ao Wi-Fi !!!");
         WiFi.begin(ssid, password);
         while (WiFi.status() != WL_CONNECTED)
         {
@@ -80,25 +82,26 @@ void conectarWiFi()
 
 void conectarMQTT()
 {
-    if (!MQTT.connected())
+    if (MQTT.connected())
     {
-        Serial.print("Conectando-se ao MQTT ");
-        while (!MQTT.connected())
+        sub_mqtt();
+        return;
+    }
+    while (!MQTT.connected())
+    {
+        Serial.println("!!! Conectando-se ao MQTT !!!");
+        if (MQTT.connect(section_id))
         {
-            MQTT.connect(section_id);
-            Serial.print(".");
-            delay(500);
+            Serial.print("Conectado a '");
+            Serial.print(broker);
+            Serial.println("'");
+            sub_mqtt();
+            return;
         }
-        Serial.println();
-        Serial.print("Conectado a '");
-        Serial.print(broker);
-        Serial.println("'");
-        MQTT.subscribe(topico_dado_teste);
-        MQTT.subscribe(topico_dado_teste_novo);
     }
 }
 
-void sub_mqtt(char *topic, byte *payload, unsigned int length)
+void get_data_mqtt(char *topic, byte *payload, unsigned int length)
 {
     String mensagem;
     for (int i = 0; i < length; i++)
@@ -106,90 +109,72 @@ void sub_mqtt(char *topic, byte *payload, unsigned int length)
         char c = (char)payload[i];
         mensagem += c;
     }
-    Serial.print("Mensagem recebida: ");
     Serial.println(mensagem);
 }
 
 void pub_mqtt()
 {
-    //   sprintf(json,  "{\"%s\":{\"value\":%02.02f, \"context\":{\"temperature\":%02.02f, \"humidity\":%02.02f}}}", VARIABLE_LABEL_TEMPERATURE, temperature, temperature, humidity);  
+    char json[255];
+    sprintf(json, "{\"t\":%02.02f, \"u\":%02.02f, \"uS\":%02.02f, \"l\":%02.02f, \"c\":%02.02f}", _temperatura, _umidade, _umidadeSolo, _luz, _chuva);
+    MQTT.publish(topico, json);
+}
+
+void sub_mqtt()
+{
+    MQTT.subscribe(topico);
 }
 
 void loop()
 {
-    conectarMQTT();
     conectarWiFi();
+    conectarMQTT();
 
-    MQTT.publish(topico_dado_teste, "Dado_teste");
-    MQTT.publish(topico_dado_teste_novo, "Dado_teste_novo");
+    temp_umid();
+    umid_solo();
+    qtd_chuva();
+    qtd_luz();
 
+    pub_mqtt();
     MQTT.loop();
-    delay(5000);
-    // aguar_planta();
-    // delay(tempo);
-    // temp_umid();
-    // delay(tempo);
-    // umid_solo();
-    // delay(tempo);
-    // qtd_chuva();
-    // delay(tempo);
-    // qtd_luz();
-    // delay(tempo);
+    Serial.println("Fim do loop");
 }
 
 void temp_umid()
 {
     digitalWrite(clima_vcc, HIGH);
     delay(tempo_l);
-    double u = dht.readHumidity();
-    double t = dht.readTemperature();
+    _temperatura = dht.readTemperature();
+    _umidade = dht.readHumidity();
     digitalWrite(clima_vcc, LOW);
-    Serial.print("Umidade: ");
-    Serial.print(u);
-    Serial.println(" %");
-    Serial.print("Temperatura: ");
-    Serial.print(t);
-    Serial.println(" *C");
-    Serial.println();
 }
 
 void umid_solo()
 {
-    digitalWrite(solo_vcc, HIGH);
+    digitalWrite(umidade_solo_vcc, HIGH);
     delay(tempo_l);
-    Serial.print("Umidade do solo: ");
-    Serial.println(analogRead(solo));
-    digitalWrite(solo_vcc, LOW);
-    Serial.println();
+    _umidadeSolo = analogRead(umidade_solo);
+    digitalWrite(umidade_solo_vcc, LOW);
 }
 
 void qtd_chuva()
 {
     digitalWrite(chuva_vcc, HIGH);
     delay(tempo_l);
-    Serial.print("Quantidade de chuva: ");
-    Serial.println(analogRead(chuva));
+    _chuva = analogRead(chuva);
     digitalWrite(chuva_vcc, LOW);
-    Serial.println();
 }
 
 void qtd_luz()
 {
     digitalWrite(luz_vcc, HIGH);
     delay(tempo_l);
-    Serial.print("Quantidade de luz: ");
-    Serial.println(analogRead(luz));
+    _luz = analogRead(luz);
     digitalWrite(luz_vcc, LOW);
-    Serial.println();
 }
 
 void aguar_planta()
 {
-    // digitalWrite(aguar_vcc, HIGH);
-    delay(tempo_l);
     digitalWrite(aguar_ini, LOW);
     delay(tempo_l);
     digitalWrite(aguar_ini, HIGH);
-    // digitalWrite(aguar_vcc, LOW);
-    // Serial.println();
 }
