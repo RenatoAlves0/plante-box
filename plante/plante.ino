@@ -124,17 +124,18 @@ void loop()
 {
     conectarWiFi();
     conectarMQTT();
+    delay(3000);
+    cliente.loop();
+    //total de tempo = tempo abaixo + 10 segundos
+    delay(50000);
+    //total de tempo = tempo acima + 10 segundos
 
-    delay(1000);
     temp_umid();
     umid_solo();
     qtd_chuva();
     qtd_luz();
 
     pub_mqtt();
-    delay(4000);
-    cliente.loop();
-    delay(50000);
     Serial.println("...");
 }
 
@@ -174,6 +175,5 @@ void qtd_luz()
 void aguar_planta()
 {
     digitalWrite(aguar_ini, LOW);
-    delay(tempo_l);
     digitalWrite(aguar_ini, HIGH);
 }
