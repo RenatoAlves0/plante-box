@@ -19,20 +19,21 @@
 #define aguar_vcc 18
 
 #define tempo_l 1500
-#define tempo 5000
+#define tempo 2500
 
 #define ssid "..."
 #define password "windows10mobile1"
 #define topico "plante_iot_dados(renalves.oli)"
-#define section_id "plante_iot_id(renalves.oli)"
-#define broker "iot.eclipse.org"
-#define broker_port 1883
+#define cliente_id "plante_iot_id(renalves.oli)"
+#define servidor "iot.eclipse.org"
+#define porta 1883
 
 //Variáveis globais
 WiFiClient plante_iot;
-PubSubClient MQTT(plante_iot);
+PubSubClient cliente(plante_iot);
 DHT dht(clima, DHT11);
-float _temperatura, _umidade, _umidadeSolo, _luz, _chuva;
+float _temperatura = -100, _umidade = -100, _umidadeSolo = -100, _luz = -100, _chuva = -100;
+bool executa = true;
 
 //Prototypes
 void conectarWiFi();
@@ -46,8 +47,8 @@ void setup()
     Serial.begin(115200);
     conectarWiFi();
 
-    MQTT.setServer(broker, broker_port);
-    MQTT.setCallback(get_data_mqtt);
+    cliente.setServer(servidor, porta);
+    cliente.setCallback(get_data_mqtt);
     conectarMQTT();
 
     pinMode(clima_vcc, OUTPUT);
@@ -82,18 +83,13 @@ void conectarWiFi()
 
 void conectarMQTT()
 {
-    if (MQTT.connected())
+    while (!cliente.connected())
     {
-        sub_mqtt();
-        return;
-    }
-    while (!MQTT.connected())
-    {
-        Serial.println("!!! Conectando-se ao MQTT !!!");
-        if (MQTT.connect(section_id))
+        Serial.println("!!! Conectando-se ao cliente !!!");
+        if (cliente.connect(cliente_id))
         {
             Serial.print("Conectado a '");
-            Serial.print(broker);
+            Serial.print(servidor);
             Serial.println("'");
             sub_mqtt();
             return;
@@ -116,12 +112,12 @@ void pub_mqtt()
 {
     char json[255];
     sprintf(json, "{\"t\":%02.02f, \"u\":%02.02f, \"uS\":%02.02f, \"l\":%02.02f, \"c\":%02.02f}", _temperatura, _umidade, _umidadeSolo, _luz, _chuva);
-    MQTT.publish(topico, json);
+    cliente.publish(topico, json);
 }
 
 void sub_mqtt()
 {
-    MQTT.subscribe(topico);
+    cliente.subscribe(topico);
 }
 
 void loop()
@@ -129,20 +125,23 @@ void loop()
     conectarWiFi();
     conectarMQTT();
 
+    delay(1000);
     temp_umid();
     umid_solo();
     qtd_chuva();
     qtd_luz();
 
     pub_mqtt();
-    MQTT.loop();
-    Serial.println("Fim do loop");
+    delay(4000);
+    cliente.loop();
+    delay(50000);
+    Serial.println("...");
 }
 
 void temp_umid()
 {
     digitalWrite(clima_vcc, HIGH);
-    delay(tempo_l);
+    delay(tempo);
     _temperatura = dht.readTemperature();
     _umidade = dht.readHumidity();
     digitalWrite(clima_vcc, LOW);
