@@ -23,8 +23,9 @@
 
 #define ssid "..."
 #define password "windows10mobile1"
-#define topico "plante_iot_dados(renalves.oli)"
-#define cliente_id "plante_iot_id(renalves.oli)"
+#define topico_sensores "plante_iot_sensores(renalves.oli@gmail.com)"
+#define topico_regador "plante_iot_regador(renalves.oli@gmail.com)"
+#define cliente_id "plante_iot_id(renalves.oli@gmail.com)"
 #define servidor "iot.eclipse.org"
 #define porta 1883
 
@@ -33,7 +34,7 @@ WiFiClient plante_iot;
 PubSubClient cliente(plante_iot);
 DHT dht(clima, DHT11);
 float _temperatura = -100, _umidade = -100, _umidadeSolo = -100, _luz = -100, _chuva = -100;
-bool executa = true;
+int acc_executa = 0;
 
 //Prototypes
 void conectarWiFi();
@@ -112,30 +113,32 @@ void pub_mqtt()
 {
     char json[255];
     sprintf(json, "{\"t\":%02.02f, \"u\":%02.02f, \"uS\":%02.02f, \"l\":%02.02f, \"c\":%02.02f}", _temperatura, _umidade, _umidadeSolo, _luz, _chuva);
-    cliente.publish(topico, json);
+    cliente.publish(topico_sensores, json);
 }
 
 void sub_mqtt()
 {
-    cliente.subscribe(topico);
+    cliente.subscribe(topico_regador);
 }
 
 void loop()
 {
     conectarWiFi();
     conectarMQTT();
-    delay(3000);
+    delay(tempo);
     cliente.loop();
-    //total de tempo = tempo abaixo + 10 segundos
-    delay(50000);
-    //total de tempo = tempo acima + 10 segundos
+    
+    if(acc_executa == 24) { //executa a cada 1 min
+        acc_executa = 0;
+        delay(tempo_l);
+        temp_umid();
+        umid_solo();
+        qtd_chuva();
+        qtd_luz();
+        pub_mqtt();
+    }
 
-    temp_umid();
-    umid_solo();
-    qtd_chuva();
-    qtd_luz();
-
-    pub_mqtt();
+    acc_executa = acc_executa + 1;
     Serial.println("...");
 }
 
