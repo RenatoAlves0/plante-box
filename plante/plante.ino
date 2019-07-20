@@ -112,7 +112,7 @@ void get_data_mqtt(char *topic, byte *payload, unsigned int length)
 void pub_mqtt()
 {
     char json[255];
-    sprintf(json, "{\"t\":%02.02f, \"u\":%02.02f, \"uS\":%02.02f, \"l\":%02.02f, \"c\":%02.02f}", _temperatura, _umidade, _umidadeSolo, _luz, _chuva);
+    sprintf(json, "{\"t\":%02.02f,\"u\":%02.02f,\"uS\":%02.02f,\"l\":%02.02f,\"c\":%02.02f}", _temperatura, _umidade, _umidadeSolo, _luz, _chuva);
     cliente.publish(topico_sensores, json);
 }
 
