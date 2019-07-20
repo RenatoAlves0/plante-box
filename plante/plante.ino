@@ -23,15 +23,15 @@
 
 #define ssid "..."
 #define password "windows10mobile1"
-#define topico_sensores "plante_iot_sensores(renalves.oli@gmail.com)"
-#define topico_regador "plante_iot_regador(renalves.oli@gmail.com)"
-#define cliente_id "plante_iot_id(renalves.oli@gmail.com)"
+#define topico_sensores "plante_box_sensores(renalves.oli@gmail.com)"
+#define topico_regador "plante_box_regador(renalves.oli@gmail.com)"
+#define cliente_id "plante_box_id(renalves.oli@gmail.com)"
 #define servidor "iot.eclipse.org"
 #define porta 1883
 
 //Variáveis globais
-WiFiClient plante_iot;
-PubSubClient cliente(plante_iot);
+WiFiClient plante_box;
+PubSubClient cliente(plante_box);
 DHT dht(clima, DHT11);
 float _temperatura = -100, _umidade = -100, _umidadeSolo = -100, _luz = -100, _chuva = -100;
 int acc_executa = 0;
