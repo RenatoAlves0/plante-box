@@ -26,8 +26,11 @@
 #define topico_sensores "plante_box_sensores(renalves.oli@gmail.com)"
 #define topico_regador "plante_box_regador(renalves.oli@gmail.com)"
 #define cliente_id "plante_box_id(renalves.oli@gmail.com)"
-#define servidor "iot.eclipse.org"
+#define servidor "test.mosquitto.org"
 #define porta 1883
+// this.uri = 'ws://test.mosquitto.org:8080/ws'
+// this.uri = 'ws://test.mosquitto.org:8081/ws'
+// this.uri = 'ws://test.mosquitto.org:1883/ws'
 
 //Variáveis globais
 WiFiClient plante_box;
