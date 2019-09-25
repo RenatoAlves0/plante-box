@@ -28,9 +28,6 @@
 #define cliente_id "plante_box_id(renalves.oli@gmail.com)"
 #define servidor "test.mosquitto.org"
 #define porta 1883
-// this.uri = 'ws://test.mosquitto.org:8080/ws'
-// this.uri = 'ws://test.mosquitto.org:8081/ws'
-// this.uri = 'ws://test.mosquitto.org:1883/ws'
 
 //Variáveis globais
 WiFiClient plante_box;
@@ -115,6 +112,9 @@ void get_data_mqtt(char *topic, byte *payload, unsigned int length)
 void pub_mqtt()
 {
     char json[255];
+    _umidadeSolo = _umidadeSolo / 4095;
+    _luz = _luz / 4095;
+    _chuva = _chuva / 4095;
     sprintf(json, "{\"t\":%02.02f,\"u\":%02.02f,\"uS\":%02.02f,\"l\":%02.02f,\"c\":%02.02f}", _temperatura, _umidade, _umidadeSolo, _luz, _chuva);
     cliente.publish(topico_sensores, json);
 }
@@ -122,6 +122,7 @@ void pub_mqtt()
 void sub_mqtt()
 {
     cliente.subscribe(topico_regador);
+    cliente.subscribe(topico_sensores);
 }
 
 void loop()
