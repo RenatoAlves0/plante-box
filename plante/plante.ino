@@ -23,6 +23,7 @@
 
 #define ssid "..."
 #define password "windows10mobile1"
+#define topico_sensores_app "plante_box_sensores_app(renalves.oli@gmail.com)"
 #define topico_sensores "plante_box_sensores(renalves.oli@gmail.com)"
 #define topico_regador "plante_box_regador(renalves.oli@gmail.com)"
 #define cliente_id "plante_box_id(renalves.oli@gmail.com)"
@@ -112,17 +113,17 @@ void get_data_mqtt(char *topic, byte *payload, unsigned int length)
 void pub_mqtt()
 {
     char json[255];
-    _umidadeSolo = _umidadeSolo / 4095;
-    _luz = _luz / 4095;
-    _chuva = _chuva / 4095;
+    _umidadeSolo = _umidadeSolo / 40.95;
+    _luz = _luz / 40.95;
+    _chuva = _chuva / 40.95;
     sprintf(json, "{\"t\":%02.02f,\"u\":%02.02f,\"uS\":%02.02f,\"l\":%02.02f,\"c\":%02.02f}", _temperatura, _umidade, _umidadeSolo, _luz, _chuva);
     cliente.publish(topico_sensores, json);
+    cliente.publish(topico_sensores_app, json);
 }
 
 void sub_mqtt()
 {
     cliente.subscribe(topico_regador);
-    cliente.subscribe(topico_sensores);
 }
 
 void loop()
@@ -131,8 +132,9 @@ void loop()
     conectarMQTT();
     delay(tempo);
     cliente.loop();
-    
-    if(acc_executa == 24) { //executa a cada 1 min
+
+    if (acc_executa == 24) //executa a cada 1 min
+    {
         acc_executa = 0;
         delay(tempo_l);
         temp_umid();
