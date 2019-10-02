@@ -2,6 +2,8 @@
 #include <DHT_U.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include "FS.h"
+#include "SPIFFS.h"
 
 #define clima 23
 #define clima_vcc 22
@@ -23,10 +25,12 @@
 
 #define ssid "..."
 #define password "windows10mobile1"
-#define topico_sensores_app "plante_box_sensores_app(renalves.oli@gmail.com)"
-#define topico_sensores "plante_box_sensores(renalves.oli@gmail.com)"
-#define topico_regador "plante_box_regador(renalves.oli@gmail.com)"
-#define cliente_id "plante_box_id(renalves.oli@gmail.com)"
+#define topico_plantacao_principal "plante_plantacao_principal.5d699b7e0762797037d35801"
+#define topico_sensores_c "plante_sensores_c.5d699b7e0762797037d35801"
+#define topico_sensores "plante_sensores.5d699b7e0762797037d35801"
+#define topico_regador_c "plante_regador_c.5d699b7e0762797037d35801"
+#define topico_regador "plante_regador.5d699b7e0762797037d35801"
+#define cliente_id "plante.5d699b7e0762797037d35801"
 #define servidor "test.mosquitto.org"
 #define porta 1883
 
@@ -36,6 +40,7 @@ PubSubClient cliente(plante_box);
 DHT dht(clima, DHT11);
 float _temperatura = -100, _umidade = -100, _umidadeSolo = -100, _luz = -100, _chuva = -100;
 int acc_executa = 0;
+bool regar = false;
 
 //Prototypes
 void conectarWiFi();
@@ -48,6 +53,8 @@ void setup()
 {
     Serial.begin(115200);
     conectarWiFi();
+    if (!SPIFFS.begin(true))
+        Serial.println("Erro ao montar SPIFFS");
 
     cliente.setServer(servidor, porta);
     cliente.setCallback(get_data_mqtt);
@@ -62,6 +69,46 @@ void setup()
 
     dht.begin();
 }
+
+void ler(fs::FS &fs, const char *path)
+{
+    Serial.printf("Lendo de %s\r\n", path);
+    File file = fs.open(path);
+    if (!file || file.isDirectory())
+    {
+        Serial.printf("Falha o abrir %s\r\n", path);
+        return;
+    }
+
+    Serial.printf("Resultado de %s\r\n", path);
+    while (file.available())
+        Serial.write(file.read());
+    Serial.println();
+}
+
+void escrever(fs::FS &fs, const char *path, String message)
+{
+    Serial.printf("Escrevendo em %s\r\n", path);
+    File file = fs.open(path, FILE_WRITE);
+    if (!file)
+    {
+        Serial.printf("Falha ao abrir %s\r\n", path);
+        return;
+    }
+    if (file.print(message))
+        Serial.printf("Gravado com sucesso em %s\r\n", path);
+    else
+        Serial.printf("Erro ao gravar em %s\r\n", path);
+}
+
+// void deletar(fs::FS &fs, const char *path)
+// {
+//     Serial.printf("Deletando %s\r\n", path);
+//     if (fs.remove(path))
+//         Serial.printf("%s\r\n deletado", path);
+//     else
+//         Serial.printf("Erro ao deletar %s\r\n", path);
+// }
 
 void conectarWiFi()
 {
@@ -108,6 +155,12 @@ void get_data_mqtt(char *topic, byte *payload, unsigned int length)
         mensagem += c;
     }
     Serial.println(mensagem);
+    if (strcmp(topic, topico_plantacao_principal) == 0)
+    {
+        Serial.println(topic);
+        escrever(SPIFFS, "/plantacao_principal.txt", mensagem);
+        ler(SPIFFS, "/plantacao_principal.txt");
+    }
 }
 
 void pub_mqtt()
@@ -118,12 +171,14 @@ void pub_mqtt()
     _chuva = _chuva / 40.95;
     sprintf(json, "{\"t\":%02.02f,\"u\":%02.02f,\"uS\":%02.02f,\"l\":%02.02f,\"c\":%02.02f}", _temperatura, _umidade, _umidadeSolo, _luz, _chuva);
     cliente.publish(topico_sensores, json);
-    cliente.publish(topico_sensores_app, json);
+    cliente.publish(topico_sensores_c, json);
 }
 
 void sub_mqtt()
 {
     cliente.subscribe(topico_regador);
+    cliente.subscribe(topico_regador_c);
+    cliente.subscribe(topico_plantacao_principal);
 }
 
 void loop()
@@ -133,7 +188,7 @@ void loop()
     delay(tempo);
     cliente.loop();
 
-    if (acc_executa == 24) //executa a cada 1 min
+    if (acc_executa == 24 / 4) //executa a cada 1 min
     {
         acc_executa = 0;
         delay(tempo_l);
