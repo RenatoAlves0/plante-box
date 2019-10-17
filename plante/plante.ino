@@ -41,7 +41,7 @@ PubSubClient cliente(plante_box);
 DHT dht(clima, DHT11);
 float _temperatura = -100, _umidade = -100, _umidadeSolo = -100, _luz = -100, _chuva = -100;
 int acc_executa = 0;
-bool regar = false;
+bool regar = false, regando = false;
 
 //Prototypes
 void conectarWiFi();
@@ -66,6 +66,7 @@ void setup()
     pinMode(luz_vcc, OUTPUT);
     pinMode(chuva_vcc, OUTPUT);
     pinMode(aguar_c, OUTPUT);
+    digitalWrite(aguar_c, HIGH);
 
     dht.begin();
 }
@@ -154,6 +155,7 @@ void get_data_mqtt(char *topic, byte *payload, unsigned int length)
     }
     if (strcmp(topic, topico_plantacao_principal) == 0)
     {
+        //IMPLEMENTAR FUNCIONALIDADE DE DESLIGAMENTO DE REGA LOCALMENTE
         Serial.println(topic);
         escrever(SPIFFS, "/plantacao_principal.txt", mensagem);
         ler(SPIFFS, "/plantacao_principal.txt");
@@ -162,7 +164,7 @@ void get_data_mqtt(char *topic, byte *payload, unsigned int length)
 
 void pub_mqtt()
 {
-    char json[255];
+    char json[60];
     _umidadeSolo = _umidadeSolo / 40.95;
     _luz = _luz / 40.95;
     _chuva = _chuva / 40.95;
@@ -185,18 +187,22 @@ void loop()
     delay(tempo);
     cliente.loop();
 
-    if (acc_executa == 24 / 4) //executa a cada 1 min
+    if (regar && !regando)
+        iniciar_rega();
+    if (!regar && regando)
+        finalizar_rega();
+    if (regando || acc_executa == 24 / 4) //executa a cada 1 min
     {
-        acc_executa = 0;
+        if (acc_executa == 24 / 4)
+            acc_executa = 0;
         delay(tempo_l);
-        temp_umid();
         umid_solo();
+        temp_umid();
         qtd_chuva();
         qtd_luz();
         pub_mqtt();
     }
 
-    aguar_planta();
     acc_executa++;
     Serial.println(acc_executa);
 }
@@ -218,6 +224,8 @@ void umid_solo()
     delay(tempo_l);
     _umidadeSolo = analogRead(umidade_solo);
     digitalWrite(umidade_solo_vcc, LOW);
+    //IMPLEMENTAR FUNCIONALIDADE DE DESLIGAMENTO DE RAGA LOCALMENTE
+    // ler(SPIFFS, "/plantacao_principal.txt");
 }
 
 void qtd_chuva()
@@ -236,12 +244,16 @@ void qtd_luz()
     digitalWrite(luz_vcc, LOW);
 }
 
-void aguar_planta()
+void iniciar_rega()
 {
-    Serial.println("Ligar");
+    Serial.println("Ligando regador");
     digitalWrite(aguar_c, LOW);
-    delay(tempo_l);
-    Serial.println("Desligar");
+    regando = true;
+}
+
+void finalizar_rega()
+{
+    Serial.println("Desligando regador");
     digitalWrite(aguar_c, HIGH);
-    delay(tempo_l);
+    regando = false;
 }
