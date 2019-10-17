@@ -17,12 +17,13 @@
 #define chuva 34
 #define chuva_vcc 27
 
-#define aguar_ini 19
-#define aguar_vcc 18
+#define aguar_c 19
 
 #define tempo_l 1500
 #define tempo 2500
 
+// #define ssid "LAR_2_BW"
+// #define password "lar2-ifce"
 #define ssid "..."
 #define password "windows10mobile1"
 #define topico_plantacao_principal "plante_plantacao_principal.5d699b7e0762797037d35801"
@@ -64,8 +65,7 @@ void setup()
     pinMode(umidade_solo_vcc, OUTPUT);
     pinMode(luz_vcc, OUTPUT);
     pinMode(chuva_vcc, OUTPUT);
-    pinMode(aguar_vcc, OUTPUT);
-    pinMode(aguar_ini, OUTPUT);
+    pinMode(aguar_c, OUTPUT);
 
     dht.begin();
 }
@@ -100,15 +100,6 @@ void escrever(fs::FS &fs, const char *path, String message)
     else
         Serial.printf("Erro ao gravar em %s\r\n", path);
 }
-
-// void deletar(fs::FS &fs, const char *path)
-// {
-//     Serial.printf("Deletando %s\r\n", path);
-//     if (fs.remove(path))
-//         Serial.printf("%s\r\n deletado", path);
-//     else
-//         Serial.printf("Erro ao deletar %s\r\n", path);
-// }
 
 void conectarWiFi()
 {
@@ -154,7 +145,13 @@ void get_data_mqtt(char *topic, byte *payload, unsigned int length)
         char c = (char)payload[i];
         mensagem += c;
     }
-    Serial.println(mensagem);
+    if (strcmp(topic, topico_regador) == 0 || strcmp(topic, topico_regador_c) == 0)
+    {
+        if ((char)payload[0] == '1')
+            regar = true;
+        else
+            regar = false;
+    }
     if (strcmp(topic, topico_plantacao_principal) == 0)
     {
         Serial.println(topic);
@@ -199,16 +196,19 @@ void loop()
         pub_mqtt();
     }
 
-    acc_executa = acc_executa + 1;
-    Serial.println("...");
+    aguar_planta();
+    acc_executa++;
+    Serial.println(acc_executa);
 }
 
 void temp_umid()
 {
     digitalWrite(clima_vcc, HIGH);
     delay(tempo);
-    _temperatura = dht.readTemperature();
-    _umidade = dht.readHumidity();
+    if (dht.readTemperature() + 101 > 0)
+        _temperatura = dht.readTemperature();
+    if (dht.readTemperature() + 101 > 0)
+        _umidade = dht.readHumidity();
     digitalWrite(clima_vcc, LOW);
 }
 
@@ -238,6 +238,10 @@ void qtd_luz()
 
 void aguar_planta()
 {
-    digitalWrite(aguar_ini, LOW);
-    digitalWrite(aguar_ini, HIGH);
+    Serial.println("Ligar");
+    digitalWrite(aguar_c, LOW);
+    delay(tempo_l);
+    Serial.println("Desligar");
+    digitalWrite(aguar_c, HIGH);
+    delay(tempo_l);
 }
