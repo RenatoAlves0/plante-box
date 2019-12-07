@@ -22,8 +22,6 @@
 #define tempo_l 1500
 #define tempo 2500
 
-// #define ssid "LAR_2_BW"
-// #define password "lar2-ifce"
 #define ssid "..."
 #define password "windows10mobile1"
 #define topico_plantacao_principal "plante_plantacao_principal.5d699b7e0762797037d35801"
@@ -168,7 +166,7 @@ void pub_mqtt()
     _umidadeSolo = _umidadeSolo / 40.95;
     _luz = _luz / 40.95;
     _chuva = _chuva / 40.95;
-    sprintf(json, "{\"t\":%02.02f,\"u\":%02.02f,\"uS\":%02.02f,\"l\":%02.02f,\"c\":%02.02f}", _temperatura, _umidade, _umidadeSolo, _luz, _chuva);
+    sprintf(json, "{\"t\":%02.02f,\"u\":%02.02f,\"uS\":%02.02f,\"l\":%02.02f,\"c\":%02.02f}", _temperatura, _umidade, 100 - _umidadeSolo, _luz, 100 - _chuva);
     cliente.publish(topico_sensores, json);
     cliente.publish(topico_sensores_c, json);
 }
@@ -191,10 +189,8 @@ void loop()
         iniciar_rega();
     if (!regar && regando)
         finalizar_rega();
-    if (regando || acc_executa == 24 / 4) //executa a cada 1 min
+    if (regando || acc_executa == 0)
     {
-        if (acc_executa == 24 / 4)
-            acc_executa = 0;
         delay(tempo_l);
         umid_solo();
         temp_umid();
@@ -204,6 +200,8 @@ void loop()
     }
 
     acc_executa++;
+    if (acc_executa == 120) //24 equivale a -> 1 minuto, 120 equivale a -> 5 minutos
+        acc_executa = 0;
     Serial.println(acc_executa);
 }
 
