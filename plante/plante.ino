@@ -200,7 +200,7 @@ void loop()
     }
 
     acc_executa++;
-    if (acc_executa == 120) //24 equivale a -> 1 minuto, 120 equivale a -> 5 minutos
+    if (acc_executa >= 120) //24 equivale a -> 1 minuto, 120 equivale a -> 5 minutos
         acc_executa = 0;
     Serial.println(acc_executa);
 }
@@ -251,6 +251,7 @@ void iniciar_rega()
 
 void finalizar_rega()
 {
+    acc_executa = 0;
     Serial.println("Desligando regador");
     digitalWrite(aguar_c, HIGH);
     regando = false;
