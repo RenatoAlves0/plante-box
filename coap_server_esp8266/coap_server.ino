@@ -1,4 +1,4 @@
-#include <ESP8266WiFi.h>
+#include <WiFi.h>
 #include "coap_server.h"
 
 #define ssid "..."
@@ -77,6 +77,7 @@ void setup()
 
 void loop()
 {
+    conectarWiFi();
     coap.loop();
     // delay(1000);
 }

@@ -1,0 +1,25 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "/home/renato/.arduino15/packages/esp32/tools/**",
+                "/home/renato/.arduino15/packages/esp32/hardware/esp32/1.0.3/**",
+                "/home/renato/.arduino15/packages/esp8266/tools/**",
+                "/home/renato/Arduino/libraries/**",
+                "/opt/arduino-1.8.8/libraries/**",
+                "/home/renato/.arduino15/packages/esp8266/hardware/esp8266/2.5.2/**",
+                "/home/renato/Arduino/arduino-1.8.8/libraries/**"
+            ],
+            "forcedInclude": [],
+            "defines": [
+                "USBCON"
+            ],
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "gnu17",
+            "cppStandard": "gnu++14"
+        }
+    ],
+    "version": 4
+}
