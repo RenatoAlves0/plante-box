@@ -22,6 +22,7 @@
 
 #define ssid "..."
 #define password "windows10mobile1"
+#define url_sensores "sensores"
 #define servidor IPAddress(192, 168, 0, 5)
 #define porta 5683
 
@@ -103,7 +104,7 @@ void put_coap()
     _luz = _luz / 40.95;
     _chuva = _chuva / 40.95;
     sprintf(json, "{\"t\":%02.02f,\"u\":%02.02f,\"uS\":%02.02f,\"l\":%02.02f,\"c\":%02.02f}", _temperatura, _umidade, 100 - _umidadeSolo, _luz, 100 - _chuva);
-    int msgid = coap.put(servidor, porta, "sensores", json);
+    int msgid = coap.put(servidor, porta, url_sensores, json);
 }
 
 void loop()
@@ -125,6 +126,11 @@ void loop()
         qtd_luz();
         put_coap();
     }
+
+    // acc_executa++;
+    // if (acc_executa >= 6) //6 equivale a 15 segundos, 24 equivale a 1 minuto, 120 equivale a 5 minutos
+    // acc_executa = 0;
+    // Serial.println(acc_executa);
 }
 
 void temp_umid()
