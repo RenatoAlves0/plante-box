@@ -73,20 +73,14 @@ void setup()
 
 void printLocalTime()
 {
-    // uint32_t timer_start = 0;
-    // uint32_t total_time = 0;
     struct tm timeinfo;
     struct tm *time;
     time_t unixtime;
-    // timer_start = millis();
     if (!getLocalTime(&timeinfo))
     {
         Serial.println("!!! Erro ao obter tempo !!!");
         return;
     }
-    // total_time = millis() - timer_start;
-    // Serial.println("total_time");
-    // Serial.println(total_time);
     Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
     time = &timeinfo;
     unixtime = mktime(time);
@@ -94,8 +88,7 @@ void printLocalTime()
     Serial.println(unixtime);
 
     timeval tv;
-    tv.tv_sec = unixtime; //Grava data na memória do ESP
-    // tv.tv_usec = total_time * 1000;
+    tv.tv_sec = unixtime;
 }
 
 void conectarWiFi()
@@ -153,14 +146,13 @@ void get_data_mqtt(char *topic, byte *payload, unsigned int length)
 
 void pub_mqtt()
 {
+    struct timeval agora;
+    gettimeofday(&agora, NULL);
     char json[1024];
     _umidadeSolo = _umidadeSolo / 40.95;
     _luz = _luz / 40.95;
     _chuva = _chuva / 40.95;
-    struct timeval agora;
-    gettimeofday(&agora, NULL);
-
-    sprintf(json, "{\"t\":%02.02f,\"u\":%02.02f,\"uS\":%02.02f,\"l\":%02.02f,\"c\":%02.02f, \"envio\":%u, \"emicros\":%u}", _temperatura, _umidade, 100 - _umidadeSolo, _luz, 100 - _chuva, agora.tv_sec, agora.tv_usec);
+    sprintf(json, "{\"t\":%02.02f,\"u\":%02.02f,\"uS\":%02.02f,\"l\":%02.02f,\"c\":%02.02f, \"envio_s\":%u, \"envio_us\":%u}", _temperatura, _umidade, 100 - _umidadeSolo, _luz, 100 - _chuva, agora.tv_sec, agora.tv_usec);
     cliente.publish(topico_sensores, json);
 }
 
