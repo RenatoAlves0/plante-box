@@ -1,6 +1,11 @@
 #include <DHT.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
+// #include <time.h>
+// #include <freertos/FreeRTOS.h>
+// #include <freertos/task.h>
+// #include <esp_system.h>
+// #include <sys/time.h>
 
 #define clima 23
 #define clima_vcc 22
@@ -26,6 +31,9 @@
 #define cliente_id "plante_box"
 #define servidor IPAddress(192, 168, 0, 5)
 #define porta 1883
+#define ntpServer "pool.ntp.org"
+#define gmtOffset_sec -3 * 3600
+#define daylightOffset_sec -3 * 3600
 
 WiFiClient plante_box;
 PubSubClient cliente(plante_box);
@@ -63,6 +71,29 @@ void setup()
     digitalWrite(aguar_c, HIGH);
 
     dht.begin();
+
+    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+    printLocalTime();
+}
+
+void printLocalTime()
+{
+    struct tm timeinfo;
+    struct tm *time;
+    time_t unixtime;
+    if (!getLocalTime(&timeinfo))
+    {
+        Serial.println("!!! Erro ao obter tempo !!!");
+        return;
+    }
+    Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+    time = &timeinfo;
+    unixtime = mktime(time);
+    Serial.println("UnixTime");
+    Serial.println(unixtime);
+
+    timeval tv;
+    tv.tv_sec = unixtime; //Grava data na memória do ESP
 }
 
 void conectarWiFi()
@@ -120,11 +151,13 @@ void get_data_mqtt(char *topic, byte *payload, unsigned int length)
 
 void pub_mqtt()
 {
-    char json[60];
+    char json[1024];
     _umidadeSolo = _umidadeSolo / 40.95;
     _luz = _luz / 40.95;
     _chuva = _chuva / 40.95;
-    sprintf(json, "{\"t\":%02.02f,\"u\":%02.02f,\"uS\":%02.02f,\"l\":%02.02f,\"c\":%02.02f}", _temperatura, _umidade, 100 - _umidadeSolo, _luz, 100 - _chuva);
+    time_t agora = time(NULL);
+
+    sprintf(json, "{\"t\":%02.02f,\"u\":%02.02f,\"uS\":%02.02f,\"l\":%02.02f,\"c\":%02.02f, \"now\":%u}", _temperatura, _umidade, 100 - _umidadeSolo, _luz, 100 - _chuva, agora);
     cliente.publish(topico_sensores, json);
 }
 
@@ -153,6 +186,15 @@ void loop()
         qtd_luz();
         pub_mqtt();
     }
+
+    // time_t agora = time(NULL);
+    // printf("\nUnix Time: %d\n", agora);
+
+    // uint32_t days = (uint32_t)floor(agora / 86400);
+    // uint32_t hours = (uint32_t)floor(((agora - days * 86400) / 3600) % 24);
+    // uint32_t minutes = (uint32_t)floor((((agora - days * 86400) - hours * 3600) / 60) % 60);
+    // uint32_t seconds = (uint32_t)floor(((((agora - days * 86400) - hours * 3600) - minutes * 60)) % 60);
+    // printf("Time remaining: %u Days, %u Hours, %u Minutes, %u Seconds\n", days, hours, minutes, seconds);
 
     // acc_executa++;
     // if (acc_executa >= 6) //6 equivale a 15 segundos, 24 equivale a 1 minuto, 120 equivale a 5 minutos
