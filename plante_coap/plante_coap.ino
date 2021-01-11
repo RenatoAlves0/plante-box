@@ -25,6 +25,9 @@
 #define url_sensores "sensores"
 #define servidor IPAddress(192, 168, 0, 5)
 #define porta 5683
+#define ntpServer "pool.ntp.org"
+#define gmtOffset_sec -3 * 3600
+#define daylightOffset_sec -3 * 3600
 
 WiFiUDP udp;
 Coap coap(udp);
@@ -49,7 +52,6 @@ void setup()
     conectarWiFi();
 
     coap.response(callback_response);
-
     coap.start();
 
     pinMode(clima_vcc, OUTPUT);
@@ -58,7 +60,31 @@ void setup()
     pinMode(chuva_vcc, OUTPUT);
     pinMode(aguar_c, OUTPUT);
     digitalWrite(aguar_c, HIGH);
+
     dht.begin();
+
+    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+    printLocalTime();
+}
+
+void printLocalTime()
+{
+    struct tm timeinfo;
+    struct tm *time;
+    time_t unixtime;
+    if (!getLocalTime(&timeinfo))
+    {
+        Serial.println("!!! Erro ao obter tempo !!!");
+        return;
+    }
+    Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+    time = &timeinfo;
+    unixtime = mktime(time);
+    Serial.println("UnixTime");
+    Serial.println(unixtime);
+
+    timeval tv;
+    tv.tv_sec = unixtime;
 }
 
 void conectarWiFi()
@@ -99,11 +125,13 @@ void callback_response(CoapPacket &packet, IPAddress ip, int port)
 
 void put_coap()
 {
-    char json[60];
+    struct timeval agora;
+    gettimeofday(&agora, NULL);
+    char json[1024];
     _umidadeSolo = _umidadeSolo / 40.95;
     _luz = _luz / 40.95;
     _chuva = _chuva / 40.95;
-    sprintf(json, "{\"t\":%02.02f,\"u\":%02.02f,\"uS\":%02.02f,\"l\":%02.02f,\"c\":%02.02f}", _temperatura, _umidade, 100 - _umidadeSolo, _luz, 100 - _chuva);
+    sprintf(json, "{\"t\":%02.02f,\"u\":%02.02f,\"uS\":%02.02f,\"l\":%02.02f,\"c\":%02.02f, \"envio_s\":%u, \"envio_us\":%u}", _temperatura, _umidade, 100 - _umidadeSolo, _luz, 100 - _chuva, agora.tv_sec, agora.tv_usec);
     int msgid = coap.put(servidor, porta, url_sensores, json);
 }
 
@@ -126,11 +154,6 @@ void loop()
         qtd_luz();
         put_coap();
     }
-
-    // acc_executa++;
-    // if (acc_executa >= 6) //6 equivale a 15 segundos, 24 equivale a 1 minuto, 120 equivale a 5 minutos
-    // acc_executa = 0;
-    // Serial.println(acc_executa);
 }
 
 void temp_umid()
