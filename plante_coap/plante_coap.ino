@@ -33,7 +33,7 @@ WiFiUDP udp;
 Coap coap(udp);
 DHT dht(clima, DHT11);
 float _temperatura = -100, _umidade = -100, _umidadeSolo = -100, _luz = -100, _chuva = -100;
-int acc_executa = 0;
+int acc_executa = 0, id = 0;
 bool regar = false, regando = false;
 
 void umid_solo();
@@ -126,13 +126,24 @@ void callback_response(CoapPacket &packet, IPAddress ip, int port)
 void put_coap()
 {
     struct timeval agora;
-    gettimeofday(&agora, NULL);
     char json[1024];
     _umidadeSolo = _umidadeSolo / 40.95;
     _luz = _luz / 40.95;
     _chuva = _chuva / 40.95;
-    sprintf(json, "{\"t\":%02.02f,\"u\":%02.02f,\"uS\":%02.02f,\"l\":%02.02f,\"c\":%02.02f, \"envio_s\":%u, \"envio_us\":%u}", _temperatura, _umidade, 100 - _umidadeSolo, _luz, 100 - _chuva, agora.tv_sec, agora.tv_usec);
-    int msgid = coap.put(servidor, porta, url_sensores, json);
+    // gettimeofday(&agora, NULL);
+
+    char *urls[] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+    for (int i = 0; i <= 0; i++)
+    {
+        delay(1000);
+        gettimeofday(&agora, NULL);
+        sprintf(json, "{\"id\":%d,\"t\":%02.02f,\"u\":%02.02f,\"uS\":%02.02f,\"l\":%02.02f,\"c\":%02.02f, \"envio_s\":%u, \"envio_us\":%u}", id, _temperatura, _umidade, 100 - _umidadeSolo, _luz, 100 - _chuva, agora.tv_sec, agora.tv_usec);
+        int msgid = coap.put(servidor, porta, urls[i], json);
+    }
+
+    // sprintf(json, "{\"id\":%d,\"t\":%02.02f,\"u\":%02.02f,\"uS\":%02.02f,\"l\":%02.02f,\"c\":%02.02f, \"envio_s\":%u, \"envio_us\":%u}", id, _temperatura, _umidade, 100 - _umidadeSolo, _luz, 100 - _chuva, agora.tv_sec, agora.tv_usec);
+    // int msgid = coap.put(servidor, porta, url_sensores, json);
+    id = id + 1;
 }
 
 void loop()

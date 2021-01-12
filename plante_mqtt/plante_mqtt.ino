@@ -22,7 +22,6 @@
 #define ssid "..."
 #define password "windows10mobile1"
 #define topico_sensores "sensores"
-#define topico_regador "regador"
 #define cliente_id "plante_box"
 #define servidor IPAddress(192, 168, 0, 5)
 #define porta 1883
@@ -32,9 +31,10 @@
 
 WiFiClient plante_box;
 PubSubClient cliente(plante_box);
+
 DHT dht(clima, DHT11);
 float _temperatura = -100, _umidade = -100, _umidadeSolo = -100, _luz = -100, _chuva = -100;
-int acc_executa = 0;
+int acc_executa = 0, id = 0;
 bool regar = false, regando = false;
 
 void umid_solo();
@@ -46,16 +46,14 @@ void finalizar_rega();
 void conectarWiFi();
 void conectarMQTT();
 void pub_mqtt();
-void sub_mqtt();
-void get_data_mqtt(char *topic, byte *payload, unsigned int length);
 
 void setup()
 {
     Serial.begin(115200);
     conectarWiFi();
 
+    cliente.setKeepAlive(18000); //5h
     cliente.setServer(servidor, porta);
-    cliente.setCallback(get_data_mqtt);
     conectarMQTT();
 
     pinMode(clima_vcc, OUTPUT);
@@ -121,44 +119,32 @@ void conectarMQTT()
             Serial.print("Conectado a '");
             Serial.print(servidor);
             Serial.println("'");
-            sub_mqtt();
             return;
         }
-    }
-}
-
-void get_data_mqtt(char *topic, byte *payload, unsigned int length)
-{
-    String mensagem;
-    for (int i = 0; i < length; i++)
-    {
-        char c = (char)payload[i];
-        mensagem += c;
-    }
-    if (strcmp(topic, topico_regador) == 0)
-    {
-        if ((char)payload[0] == '1')
-            regar = true;
-        else
-            regar = false;
     }
 }
 
 void pub_mqtt()
 {
     struct timeval agora;
-    gettimeofday(&agora, NULL);
     char json[1024];
     _umidadeSolo = _umidadeSolo / 40.95;
     _luz = _luz / 40.95;
     _chuva = _chuva / 40.95;
-    sprintf(json, "{\"t\":%02.02f,\"u\":%02.02f,\"uS\":%02.02f,\"l\":%02.02f,\"c\":%02.02f, \"envio_s\":%u, \"envio_us\":%u}", _temperatura, _umidade, 100 - _umidadeSolo, _luz, 100 - _chuva, agora.tv_sec, agora.tv_usec);
-    cliente.publish(topico_sensores, json);
-}
+    // gettimeofday(&agora, NULL);
 
-void sub_mqtt()
-{
-    cliente.subscribe(topico_regador);
+    char *topicos[] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+    for (int i = 0; i <= 9; i++)
+    {
+        delay(1000);
+        gettimeofday(&agora, NULL);
+        sprintf(json, "{\"id\":%d,\"t\":%02.02f,\"u\":%02.02f,\"uS\":%02.02f,\"l\":%02.02f,\"c\":%02.02f, \"envio_s\":%u, \"envio_us\":%u}", id, _temperatura, _umidade, 100 - _umidadeSolo, _luz, 100 - _chuva, agora.tv_sec, agora.tv_usec);
+        cliente.publish(topicos[i], json);
+    }
+
+    // sprintf(json, "{\"id\":%d,\"t\":%02.02f,\"u\":%02.02f,\"uS\":%02.02f,\"l\":%02.02f,\"c\":%02.02f, \"envio_s\":%u, \"envio_us\":%u}", id, _temperatura, _umidade, 100 - _umidadeSolo, _luz, 100 - _chuva, agora.tv_sec, agora.tv_usec);
+    // cliente.publish(topico_sensores, json);
+    id = id + 1;
 }
 
 void loop()
