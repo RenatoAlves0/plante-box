@@ -130,19 +130,26 @@ void put_coap()
     _umidadeSolo = _umidadeSolo / 40.95;
     _luz = _luz / 40.95;
     _chuva = _chuva / 40.95;
-    // gettimeofday(&agora, NULL);
 
     char *urls[] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
-    for (int i = 0; i <= 0; i++)
+    // for (int i = 0; i <= 0; i++)
+    // for (int i = 0; i <= 2; i++)
+    // for (int i = 0; i <= 4; i++)
+    // for (int i = 0; i <= 6; i++)
+    for (int i = 0; i <= 9; i++)
     {
-        delay(1000);
+        // delay(1000);
+        // delay(750);
+        // delay(500);
+        delay(250);
         gettimeofday(&agora, NULL);
-        sprintf(json, "{\"id\":%d,\"t\":%02.02f,\"u\":%02.02f,\"uS\":%02.02f,\"l\":%02.02f,\"c\":%02.02f, \"envio_s\":%u, \"envio_us\":%u}", id, _temperatura, _umidade, 100 - _umidadeSolo, _luz, 100 - _chuva, agora.tv_sec, agora.tv_usec);
+        // sprintf(json, "{\"id\":%d,\"t\":%02.02f,\"u\":%02.02f,\"uS\":%02.02f,\"l\":%02.02f,\"c\":%02.02f, \"envio_s\":%u, \"envio_us\":%u}", id, _temperatura, _umidade, 100 - _umidadeSolo, _luz, 100 - _chuva, agora.tv_sec, agora.tv_usec);
+        // sprintf(json, "{\"id\":%d,\"t\":%02.04f,\"u\":%02.04f,\"uS\":%02.04f,\"l\":%02.04f,\"c\":%02.04f, \"envio_s\":%u, \"envio_us\":%u}", id, _temperatura, _umidade, 100 - _umidadeSolo, _luz, 100 - _chuva, agora.tv_sec, agora.tv_usec);
+        sprintf(json, "{\"id\":%d,\"t\":%02.06f,\"u\":%02.06f,\"uS\":%02.06f,\"l\":%02.06f,\"c\":%02.06f, \"envio_s\":%u, \"envio_us\":%u}", id, _temperatura, _umidade, 100 - _umidadeSolo, _luz, 100 - _chuva, agora.tv_sec, agora.tv_usec);
         int msgid = coap.put(servidor, porta, urls[i], json);
+        Serial.println("Enviar");
+        Serial.println(json);
     }
-
-    // sprintf(json, "{\"id\":%d,\"t\":%02.02f,\"u\":%02.02f,\"uS\":%02.02f,\"l\":%02.02f,\"c\":%02.02f, \"envio_s\":%u, \"envio_us\":%u}", id, _temperatura, _umidade, 100 - _umidadeSolo, _luz, 100 - _chuva, agora.tv_sec, agora.tv_usec);
-    // int msgid = coap.put(servidor, porta, url_sensores, json);
     id = id + 1;
 }
 
