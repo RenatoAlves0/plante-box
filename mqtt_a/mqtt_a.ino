@@ -2,6 +2,8 @@
 #include <PubSubClient.h>
 #include <HTTPClient.h>
 #include <HTTPClient.h>
+#include <time.h>
+#include <math.h>
 
 #define tempo 2500
 
@@ -29,38 +31,46 @@ void setup()
     cliente.setServer(servidor, porta);
     conectarMQTT();
     obterTempoAtual();
-
-    //struct timeval now = {.tv_sec = 1616001960, .tv_usec = 424 * 1000};
-    //settimeofday(&now, NULL);
 }
 
 void obterTempoAtual()
 {
-    Serial.print("[HTTP] begin...\n");
     http.begin("http://192.168.0.6:8080/");
-
-    Serial.print("[HTTP] GET...\n");
     int httpCode = http.GET();
+    clock_t ini_req = clock();
 
-    if (httpCode > 0)
+    if (httpCode > 0 && httpCode == HTTP_CODE_OK)
     {
-        Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+        double tempo_req = ((double)(clock() - ini_req) / CLOCKS_PER_SEC) / 2;
+        String t = http.getString();
+        Serial.println(t);
 
-        if (httpCode == HTTP_CODE_OK)
-        {
-            String t = http.getString();
-            Serial.println(t);
+        double tempo_segundo, tempo_micro_segundo, t_s_aux, t_m_s_aux;
+        sscanf(t.substring(0, 10).c_str(), "%lf", &tempo_segundo);
+        sscanf(t.substring(11).c_str(), "%lf", &tempo_micro_segundo);
+        tempo_micro_segundo = tempo_micro_segundo * 1000;
+        Serial.println("tempo_segundo:");
+        Serial.println(tempo_segundo);
+        Serial.println("");
 
-            int s, u;
-            sscanf(t.substring(0, 10).c_str(), "%d", &s);
-            sscanf(t.substring(11).c_str(), "%d", &u);
+        t_m_s_aux = modf(tempo_req, &t_s_aux);
+        tempo_micro_segundo = tempo_micro_segundo + (t_m_s_aux * 1000 * 1000);
+        tempo_segundo = tempo_segundo + t_s_aux;
+        Serial.println("tempo_segundo:");
+        Serial.println(tempo_segundo);
+        Serial.println("");
 
-            struct timeval now = {.tv_sec = s, .tv_usec = u * 1000};
-            settimeofday(&now, NULL);
-        }
+        t_m_s_aux = modf(tempo_micro_segundo / (1000 * 1000), &t_s_aux);
+        tempo_micro_segundo = t_m_s_aux * 1000 * 1000;
+        tempo_segundo = tempo_segundo + t_s_aux;
+        Serial.println("tempo_segundo:");
+        Serial.println(tempo_segundo);
+        Serial.println("");
+
+        struct timeval now = {.tv_sec = (int)tempo_segundo, .tv_usec = (int)tempo_micro_segundo};
+        settimeofday(&now, NULL);
+        pub_mqtt();
     }
-    else
-        Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
 }
 
 void conectarWiFi()
@@ -102,18 +112,24 @@ void pub_mqtt()
 {
     struct timeval agora;
     char json[1024];
-    char dados[64] = "abc";
+    char dados[64] = "abcdefghijklmnopqrstuvwxyz";
+    clock_t ini = clock();
 
-    while (true)
+    while (((double)(clock() - ini) / CLOCKS_PER_SEC) <= 61)
     {
-        delay(1000);
+        Serial.println("CLOCK");
+        Serial.println((double)(clock() - ini) / CLOCKS_PER_SEC);
+
+        // delay(1000);
         // delay(750);
         // delay(500);
-        // delay(250);
+        delay(250);
         gettimeofday(&agora, NULL);
         sprintf(json, "{\"dados\":%u, \"envio_s\":%u, \"envio_us\":%u}", dados, agora.tv_sec, agora.tv_usec);
         cliente.publish("0", json);
     }
+    sprintf(json, "{\"fim\":%u}", "1");
+    cliente.publish("0", json);
 }
 
 void loop()
