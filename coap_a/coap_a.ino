@@ -1,5 +1,6 @@
 #include <WiFi.h>
-#include <PubSubClient.h>
+#include <WiFiUdp.h>
+#include <coap-simple.h>
 #include <HTTPClient.h>
 #include <time.h>
 #include <math.h>
@@ -10,15 +11,14 @@
 #define password "windows10mobile1"
 #define cliente_id "plante_box"
 #define servidor IPAddress(192, 168, 0, 6)
-#define porta 1883
+#define porta 5683
 
-WiFiClient plante_box;
-PubSubClient cliente(plante_box);
+WiFiUDP udp;
+Coap coap(udp);
 HTTPClient http;
 
 void conectarWiFi();
-void conectarMQTT();
-void pub_mqtt();
+void put_coap();
 void obterTempoAtual();
 
 void setup()
@@ -26,9 +26,7 @@ void setup()
     Serial.begin(115200);
     conectarWiFi();
 
-    cliente.setKeepAlive(18000); //5h
-    cliente.setServer(servidor, porta);
-    conectarMQTT();
+    coap.start();
     obterTempoAtual();
 }
 
@@ -68,7 +66,7 @@ void obterTempoAtual()
 
         struct timeval now = {.tv_sec = (int)tempo_segundo, .tv_usec = (int)tempo_micro_segundo};
         settimeofday(&now, NULL);
-        pub_mqtt();
+        put_coap();
     }
 }
 
@@ -92,26 +90,10 @@ void conectarWiFi()
     }
 }
 
-void conectarMQTT()
-{
-    while (!cliente.connected())
-    {
-        Serial.println("!!! Conectando-se ao cliente !!!");
-        if (cliente.connect(cliente_id))
-        {
-            Serial.print("Conectado a '");
-            Serial.print(servidor);
-            Serial.println("'");
-            return;
-        }
-    }
-}
-
-void pub_mqtt()
+void put_coap()
 {
     struct timeval agora;
     char json[1024];
-    char dados[64] = "abcdefghijklmnopqrstuvwxyz";
     clock_t ini = clock();
 
     while (((double)(clock() - ini) / CLOCKS_PER_SEC) <= 61)
@@ -122,13 +104,14 @@ void pub_mqtt()
         // delay(1000);
         // delay(750);
         // delay(500);
-        delay(250);
+        // delay(250);
+        delay(100);
         gettimeofday(&agora, NULL);
-        sprintf(json, "{\"dados\":%u, \"envio_s\":%u, \"envio_us\":%u}", dados, agora.tv_sec, agora.tv_usec);
-        cliente.publish("0", json);
+        sprintf(json, "{\"s\":%u, \"us\":%u, \"a\":\"123abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz\"}", agora.tv_sec, agora.tv_usec);
+        int msgid = coap.put(servidor, porta, "0", json);
     }
-    sprintf(json, "{\"fim\":%u}", "1");
-    cliente.publish("0", json);
+    sprintf(json, "{\"fim\":\"1\"}");
+    int msgid = coap.put(servidor, porta, "0", json);
 }
 
 void loop() {}

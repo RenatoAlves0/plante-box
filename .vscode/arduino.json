@@ -1,7 +1,7 @@
 {
     "board": "esp32:esp32:nodemcu-32s",
     "configuration": "FlashFreq=80,UploadSpeed=115200",
-    "sketch": "mqtt_a/mqtt_a.ino",
+    "sketch": "coap_a/coap_a.ino",
     "port": "/dev/ttyUSB0",
     "programmer": "AVR ISP"
 }
