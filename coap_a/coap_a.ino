@@ -98,16 +98,13 @@ void put_coap()
 
     while (((double)(clock() - ini) / CLOCKS_PER_SEC) <= 61)
     {
-        Serial.println("CLOCK");
-        Serial.println((double)(clock() - ini) / CLOCKS_PER_SEC);
-
         // delay(1000);
         // delay(750);
         // delay(500);
         // delay(250);
         delay(100);
         gettimeofday(&agora, NULL);
-        sprintf(json, "{\"s\":%u, \"us\":%u, \"a\":\"123abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz\"}", agora.tv_sec, agora.tv_usec);
+        sprintf(json, "{\"s\":%u, \"us\":%u, \"a\":\"1234abcdefghijklmnopqrstuvwxyz\"}", agora.tv_sec, agora.tv_usec);
         int msgid = coap.put(servidor, porta, "0", json);
     }
     sprintf(json, "{\"fim\":\"1\"}");

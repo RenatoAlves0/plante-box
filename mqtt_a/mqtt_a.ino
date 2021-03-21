@@ -111,23 +111,20 @@ void pub_mqtt()
 {
     struct timeval agora;
     char json[1024];
-    char dados[64] = "abcdefghijklmnopqrstuvwxyz";
     clock_t ini = clock();
 
     while (((double)(clock() - ini) / CLOCKS_PER_SEC) <= 61)
     {
-        Serial.println("CLOCK");
-        Serial.println((double)(clock() - ini) / CLOCKS_PER_SEC);
-
         // delay(1000);
         // delay(750);
         // delay(500);
-        delay(250);
+        // delay(250);
+        delay(100);
         gettimeofday(&agora, NULL);
-        sprintf(json, "{\"dados\":%u, \"envio_s\":%u, \"envio_us\":%u}", dados, agora.tv_sec, agora.tv_usec);
+        sprintf(json, "{\"s\":%u, \"us\":%u, \"a\":\"1234abcdefghijklmnopqrstuvwxyz\"}", agora.tv_sec, agora.tv_usec);
         cliente.publish("0", json);
     }
-    sprintf(json, "{\"fim\":%u}", "1");
+    sprintf(json, "{\"fim\":\"1\"}");
     cliente.publish("0", json);
 }
 
