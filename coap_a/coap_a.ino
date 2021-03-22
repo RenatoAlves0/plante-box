@@ -95,19 +95,23 @@ void put_coap()
     struct timeval agora;
     char json[1024];
     clock_t ini = clock();
+    int acc = 0;
 
-    while (((double)(clock() - ini) / CLOCKS_PER_SEC) <= 61)
+    while (((double)(clock() - ini) / CLOCKS_PER_SEC) <= 60)
     {
-        // delay(1000);
+        acc++;
+        delay(1000);
         // delay(750);
         // delay(500);
         // delay(250);
-        delay(100);
+        // delay(100);
         gettimeofday(&agora, NULL);
-        sprintf(json, "{\"s\":%u, \"us\":%u, \"a\":\"1234abcdefghijklmnopqrstuvwxyz\"}", agora.tv_sec, agora.tv_usec);
+        // sprintf(json, "{\"s\":%u, \"us\":%u}", agora.tv_sec, agora.tv_usec);
+        // sprintf(json, "{\"s\":%u, \"us\":%u, \"a\":\"1234abcdefghijklmnopqrstuvwxyz\"}", agora.tv_sec, agora.tv_usec);
+        sprintf(json, "{\"s\":%u, \"us\":%u, \"a\":\"12abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz\"}", agora.tv_sec, agora.tv_usec);
         int msgid = coap.put(servidor, porta, "0", json);
     }
-    sprintf(json, "{\"fim\":\"1\"}");
+    sprintf(json, "{\"fim\":%d}", acc);
     int msgid = coap.put(servidor, porta, "0", json);
 }
 
